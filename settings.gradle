@@ -1,1 +1,3 @@
 rootProject.name = 'bugboard'
+
+include 'bugboard-api', 'bugboard-core'
