@@ -1,7 +1,7 @@
 package org.example.bugboard.dto.board;
 
 public record BoardCreateRequest(
-        Long userId,
+        Long usersId,
         String title,
         String content
 ) {

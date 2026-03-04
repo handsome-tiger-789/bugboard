@@ -21,7 +21,7 @@ public class BoardController {
 
     @PostMapping
     public ResponseEntity<BoardResponse> create(@RequestBody BoardCreateRequest request) {
-        Board saved = boardService.create(request.userId(), request.title(), request.content());
+        Board saved = boardService.create(request.usersId(), request.title(), request.content());
         return ResponseEntity.created(URI.create("/api/boards/" + saved.getId()))
                 .body(BoardResponse.from(saved));
     }

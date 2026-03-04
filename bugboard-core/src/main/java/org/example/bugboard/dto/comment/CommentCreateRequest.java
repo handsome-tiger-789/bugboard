@@ -1,7 +1,7 @@
 package org.example.bugboard.dto.comment;
 
 public record CommentCreateRequest(
-        Long userId,
+        Long usersId,
         String content
 ) {
 }

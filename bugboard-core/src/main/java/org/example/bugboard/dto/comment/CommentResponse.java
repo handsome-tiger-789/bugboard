@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public record CommentResponse(
         Long id,
         Long boardId,
-        Long userId,
+        Long usersId,
         String nickname,
         String content,
         Integer likeCount,
@@ -18,8 +18,8 @@ public record CommentResponse(
         return new CommentResponse(
                 comment.getId(),
                 comment.getBoard().getId(),
-                comment.getUser().getId(),
-                comment.getUser().getNickname(),
+                comment.getUsers().getId(),
+                comment.getUsers().getNickname(),
                 comment.getContent(),
                 comment.getLikeCount(),
                 comment.getCreatedAt(),
