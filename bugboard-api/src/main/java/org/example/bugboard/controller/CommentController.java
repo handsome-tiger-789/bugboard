@@ -21,7 +21,7 @@ public class CommentController {
 
     @PostMapping("/boards/{boardId}/comments")
     public ResponseEntity<CommentResponse> create(@PathVariable Long boardId, @RequestBody CommentCreateRequest request) {
-        Comment saved = commentService.create(boardId, request.userId(), request.content());
+        Comment saved = commentService.create(boardId, request.usersId(), request.content());
         return ResponseEntity.created(URI.create("/api/comments/" + saved.getId()))
                 .body(CommentResponse.from(saved));
     }

@@ -2,10 +2,10 @@ package org.example.bugboard.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.bugboard.entity.Board;
-import org.example.bugboard.entity.User;
+import org.example.bugboard.entity.Users;
 import org.example.bugboard.exception.ResourceNotFoundException;
 import org.example.bugboard.repository.BoardRepository;
-import org.example.bugboard.repository.UserRepository;
+import org.example.bugboard.repository.UsersRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +17,14 @@ import java.util.List;
 public class BoardService {
 
     private final BoardRepository boardRepository;
-    private final UserRepository userRepository;
+    private final UsersRepository usersRepository;
 
     @Transactional
-    public Board create(Long userId, String title, String content) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+    public Board create(Long usersId, String title, String content) {
+        Users users = usersRepository.findById(usersId)
+                .orElseThrow(() -> new ResourceNotFoundException("Users", usersId));
         Board board = Board.builder()
-                .user(user)
+                .users(users)
                 .title(title)
                 .content(content)
                 .build();

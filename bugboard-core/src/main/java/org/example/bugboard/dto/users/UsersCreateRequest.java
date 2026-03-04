@@ -1,6 +1,6 @@
-package org.example.bugboard.dto.user;
+package org.example.bugboard.dto.users;
 
-public record UserCreateRequest(
+public record UsersCreateRequest(
         String provider,
         String providerId,
         String email,

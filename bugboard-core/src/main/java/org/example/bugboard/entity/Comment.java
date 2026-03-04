@@ -21,8 +21,8 @@ public class Comment extends BaseEntity {
     private Board board;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "users_id", nullable = false)
+    private Users users;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -31,9 +31,9 @@ public class Comment extends BaseEntity {
     private Integer likeCount;
 
     @Builder
-    public Comment(Board board, User user, String content) {
+    public Comment(Board board, Users users, String content) {
         this.board = board;
-        this.user = user;
+        this.users = users;
         this.content = content;
     }
 

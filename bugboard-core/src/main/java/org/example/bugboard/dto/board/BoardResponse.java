@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record BoardResponse(
         Long id,
-        Long userId,
+        Long usersId,
         String nickname,
         String title,
         String content,
@@ -17,8 +17,8 @@ public record BoardResponse(
     public static BoardResponse from(Board board) {
         return new BoardResponse(
                 board.getId(),
-                board.getUser().getId(),
-                board.getUser().getNickname(),
+                board.getUsers().getId(),
+                board.getUsers().getNickname(),
                 board.getTitle(),
                 board.getContent(),
                 board.getViewCount(),

@@ -17,8 +17,8 @@ public class Board extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "users_id", nullable = false)
+    private Users users;
 
     @Column(nullable = false, length = 50)
     private String title;
@@ -30,8 +30,8 @@ public class Board extends BaseEntity {
     private Integer viewCount;
 
     @Builder
-    public Board(User user, String title, String content) {
-        this.user = user;
+    public Board(Users users, String title, String content) {
+        this.users = users;
         this.title = title;
         this.content = content;
     }
@@ -46,7 +46,6 @@ public class Board extends BaseEntity {
     }
 
     @Override
-    @PrePersist
     protected void prePersist() {
         super.prePersist();
         viewCount = 0;
