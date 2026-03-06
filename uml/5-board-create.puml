@@ -1,0 +1,39 @@
+@startuml
+title 게시글 작성
+
+actor 사용자
+participant "Browser / Client" as Client
+participant "Front Server (BFF)" as Front
+participant "API Gateway" as Gateway
+participant "Auth Server (JWKS)" as Auth
+participant "API Server" as API
+database "User DB" as DB
+
+사용자 -> Client : 게시글 작성 후 등록 클릭
+
+Client -> Front : 게시글 작성 요청\n(title, content, JWT)
+Front -> Gateway : 게시글 작성 API 요청
+
+== JWT 검증 ==
+Gateway -> Auth : JWKS 공개키 조회
+Auth --> Gateway : JWKS 반환
+Gateway -> Gateway : JWT Signature 검증
+
+alt 토큰 유효
+    Gateway -> API : 게시글 생성 요청
+
+    API -> API : JWT userId 추출
+
+    API -> DB : 게시글 INSERT\n(title, content, author_id, is_delete=false)
+    DB --> API : 생성 완료
+
+    API --> Gateway : 게시글 생성 성공
+    Gateway --> Front : 응답 전달
+    Front --> Client : 게시글 작성 완료\n게시글 상세 이동
+
+else 토큰 무효
+    Gateway --> Front : 401 Unauthorized
+    Front --> Client : 로그인 페이지 이동
+end
+
+@enduml

@@ -1,0 +1,57 @@
+@startuml
+title 게시판 상세 조회 (작성자 권한 포함)
+
+actor 사용자
+participant "Browser / Client" as Client
+participant "Front Server (BFF)" as Front
+participant "API Gateway" as Gateway
+participant "Auth Server (JWKS)" as Auth
+participant "API Server" as API
+database "User DB" as DB
+
+== 로그인 상태 ==
+note over Client
+JWT Access Token 보유
+end note
+
+== 게시판 상세 조회 ==
+사용자 -> Client : 게시글 클릭
+
+Client -> Front : 게시글 상세 요청\nAuthorization: Bearer JWT
+Front -> Gateway : 게시글 상세 API 요청
+
+== JWT 검증 ==
+Gateway -> Auth : JWKS 공개키 조회
+Auth --> Gateway : JWKS 반환
+
+Gateway -> Gateway : JWT Signature 검증\nToken Expiration 확인
+
+alt 토큰 유효
+    Gateway -> API : 게시글 상세 조회 요청\n(postId)
+
+    API -> DB : 게시글 조회
+    DB --> API : 게시글 데이터\n(authorId 포함)
+
+    API -> API : JWT userId == authorId 확인
+
+    alt 작성자
+        API --> Gateway : 게시글 데이터\nisAuthor=true
+    else 일반 사용자
+        API --> Gateway : 게시글 데이터\nisAuthor=false
+    end
+
+    Gateway --> Front : 게시글 상세 데이터 전달
+    Front --> Client : 게시글 화면 렌더링
+
+    alt 작성자
+        Client -> Client : 수정 / 삭제 버튼 표시
+    else 일반 사용자
+        Client -> Client : 일반 조회 UI 표시
+    end
+
+else 토큰 무효
+    Gateway --> Front : 인증 실패 (401)
+    Front --> Client : 로그인 페이지 리다이렉트
+end
+
+@enduml

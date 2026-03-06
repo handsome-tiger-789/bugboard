@@ -1,0 +1,55 @@
+@startuml
+title 댓글 목록 조회 (작성자 삭제 권한 포함)
+
+actor 사용자
+participant "Browser / Client" as Client
+participant "Front Server (BFF)" as Front
+participant "API Gateway" as Gateway
+participant "Auth Server (JWKS)" as Auth
+participant "API Server" as API
+database "User DB" as DB
+
+== 로그인 상태 ==
+note over Client
+JWT Access Token 보유
+end note
+
+== 댓글 조회 ==
+사용자 -> Client : 게시글 상세 페이지 진입
+
+Client -> Front : 댓글 목록 요청\nAuthorization: Bearer JWT
+Front -> Gateway : 댓글 목록 API 요청
+
+== JWT 검증 ==
+Gateway -> Auth : JWKS 공개키 조회
+Auth --> Gateway : JWKS 반환
+
+Gateway -> Gateway : JWT Signature 검증\nToken Expiration 확인
+
+alt 토큰 유효
+    Gateway -> API : 댓글 목록 조회 요청\n(postId)
+
+    API -> DB : 댓글 목록 조회
+    DB --> API : 댓글 리스트\n(commentId, authorId, content)
+
+    API -> API : JWT userId와\n각 댓글 authorId 비교
+
+    API --> Gateway : 댓글 목록 + isAuthor 정보 반환
+
+    Gateway --> Front : 댓글 데이터 전달
+    Front --> Client : 댓글 목록 렌더링
+
+    loop 각 댓글
+        alt 작성자
+            Client -> Client : 삭제 버튼 표시
+        else 일반 사용자
+            Client -> Client : 댓글만 표시
+        end
+    end
+
+else 토큰 무효
+    Gateway --> Front : 인증 실패 (401)
+    Front --> Client : 로그인 페이지 리다이렉트
+end
+
+@enduml
