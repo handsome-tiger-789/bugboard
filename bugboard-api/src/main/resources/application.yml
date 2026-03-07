@@ -1,9 +1,9 @@
 spring:
   application:
-    name: bugboard
+    name: bugboard-api
 
   datasource:
-    url: jdbc:h2:file:./bugboard-db
+    url: jdbc:h2:file:./db/bugboard-db
     username: sa
     password:
     driver-class-name: org.h2.Driver
