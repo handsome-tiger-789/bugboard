@@ -1,6 +1,7 @@
 package org.example.bugboard.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.bugboard.dto.board.BoardListResponse;
 import org.example.bugboard.entity.Board;
 import org.example.bugboard.entity.Users;
 import org.example.bugboard.exception.ResourceNotFoundException;
@@ -9,12 +10,12 @@ import org.example.bugboard.repository.UsersRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BoardService {
+
+    private static final int PAGE_SIZE = 5;
 
     private final BoardRepository boardRepository;
     private final UsersRepository usersRepository;
@@ -39,8 +40,8 @@ public class BoardService {
         return board;
     }
 
-    public List<Board> findAll() {
-        return boardRepository.findAll();
+    public BoardListResponse findAll(int page, String title) {
+        return boardRepository.findBoards(page, PAGE_SIZE, title);
     }
 
     @Transactional
