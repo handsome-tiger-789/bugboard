@@ -4,7 +4,10 @@ plugins {
 
 dependencies {
     implementation project(':bugboard-core')
+    // spring boot 3 에서는 web이었으나 boot 4 에선 webmvc로 변경됨 (표준 stater)
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+    implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-h2console'
     runtimeOnly 'com.h2database:h2'
 }

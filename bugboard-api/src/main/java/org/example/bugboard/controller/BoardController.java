@@ -2,6 +2,7 @@ package org.example.bugboard.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.bugboard.dto.board.BoardCreateRequest;
+import org.example.bugboard.dto.board.BoardListResponse;
 import org.example.bugboard.dto.board.BoardResponse;
 import org.example.bugboard.dto.board.BoardUpdateRequest;
 import org.example.bugboard.entity.Board;
@@ -10,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/boards")
@@ -31,12 +31,15 @@ public class BoardController {
         return ResponseEntity.ok(BoardResponse.from(boardService.findById(id)));
     }
 
+    /**
+     * Board List API
+     * @return {@code ResponseEntity<BoardListResponse>}
+     * */
     @GetMapping
-    public ResponseEntity<List<BoardResponse>> findAll() {
-        List<BoardResponse> boards = boardService.findAll().stream()
-                .map(BoardResponse::from)
-                .toList();
-        return ResponseEntity.ok(boards);
+    public ResponseEntity<BoardListResponse> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String title) {
+        return ResponseEntity.ok(boardService.findAll(page, title));
     }
 
     @PutMapping("/{id}")

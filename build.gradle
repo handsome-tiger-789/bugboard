@@ -42,7 +42,11 @@ subprojects {
         }
     }
 
+    //  테스트 stdout 로그가 콘솔에 출력되도록 설정
     tasks.named('test') {
         useJUnitPlatform()
+        testLogging {
+            showStandardStreams = true
+        }
     }
 }
