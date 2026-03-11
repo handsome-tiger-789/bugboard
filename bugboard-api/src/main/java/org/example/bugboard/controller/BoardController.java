@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/api/boards")
+@RequestMapping("/boards")
 @RequiredArgsConstructor
 public class BoardController {
 
@@ -22,7 +22,7 @@ public class BoardController {
     @PostMapping
     public ResponseEntity<BoardResponse> create(@RequestBody BoardCreateRequest request) {
         Board saved = boardService.create(request.usersId(), request.title(), request.content());
-        return ResponseEntity.created(URI.create("/api/boards/" + saved.getId()))
+        return ResponseEntity.created(URI.create("/boards/" + saved.getId()))
                 .body(BoardResponse.from(saved));
     }
 

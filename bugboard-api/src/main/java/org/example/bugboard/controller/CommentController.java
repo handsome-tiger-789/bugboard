@@ -13,7 +13,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping
 @RequiredArgsConstructor
 public class CommentController {
 
@@ -22,7 +22,7 @@ public class CommentController {
     @PostMapping("/boards/{boardId}/comments")
     public ResponseEntity<CommentResponse> create(@PathVariable Long boardId, @RequestBody CommentCreateRequest request) {
         Comment saved = commentService.create(boardId, request.usersId(), request.content());
-        return ResponseEntity.created(URI.create("/api/comments/" + saved.getId()))
+        return ResponseEntity.created(URI.create("/comments/" + saved.getId()))
                 .body(CommentResponse.from(saved));
     }
 

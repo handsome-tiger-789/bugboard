@@ -1,3 +1,8 @@
+server:
+  servlet:
+    context-path: /api
+  port: 8080
+
 spring:
   application:
     name: bugboard-api
