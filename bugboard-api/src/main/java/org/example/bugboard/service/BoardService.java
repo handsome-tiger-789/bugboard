@@ -1,6 +1,7 @@
 package org.example.bugboard.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.bugboard.dto.board.BoardCreateRequest;
 import org.example.bugboard.dto.board.BoardListResponse;
 import org.example.bugboard.entity.Board;
 import org.example.bugboard.entity.Users;
@@ -21,15 +22,15 @@ public class BoardService {
     private final UsersRepository usersRepository;
 
     @Transactional
-    public Board create(Long usersId, String title, String content) {
+    public Long create(Long usersId, BoardCreateRequest boardCreateRequest) {
         Users users = usersRepository.findById(usersId)
                 .orElseThrow(() -> new ResourceNotFoundException("Users", usersId));
         Board board = Board.builder()
                 .users(users)
-                .title(title)
-                .content(content)
+                .title(boardCreateRequest.title())
+                .content(boardCreateRequest.content())
                 .build();
-        return boardRepository.save(board);
+        return boardRepository.save(board).getId();
     }
 
     @Transactional

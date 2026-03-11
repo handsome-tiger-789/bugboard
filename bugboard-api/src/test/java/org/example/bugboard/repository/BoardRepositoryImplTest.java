@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -59,6 +61,54 @@ class BoardRepositoryImplTest {
 
         em.flush();
         em.clear();
+    }
+
+    @Test
+    @DisplayName("게시글 작성 - board id 반환")
+    void save_returnsBoardWithId() {
+        Board board = Board.builder()
+                .users(testUser)
+                .title("새 게시글")
+                .content("새 내용")
+                .build();
+
+        Board saved = boardRepository.save(board);
+        em.flush();
+
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getTitle()).isEqualTo("새 게시글");
+        assertThat(saved.getContent()).isEqualTo("새 내용");
+        assertThat(saved.getUsers().getId()).isEqualTo(testUser.getId());
+    }
+
+    @Test
+    @DisplayName("게시글 작성 후 조회 가능")
+    void save_thenFindById() {
+        Board board = Board.builder()
+                .users(testUser)
+                .title("저장 테스트")
+                .content("저장 내용")
+                .build();
+
+        Board saved = boardRepository.save(board);
+        em.flush();
+        em.clear();
+
+        Board found = boardRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.getId()).isEqualTo(saved.getId());
+        assertThat(found.getTitle()).isEqualTo("저장 테스트");
+        assertThat(found.getUsers().getNickname()).isEqualTo("테스터");
+        assertThat(found.getViewCount()).isEqualTo(0);
+        assertThat(found.getIsDelete()).isFalse();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 게시글 조회 - empty 반환")
+    void findById_returnsEmptyWhenNotFound() {
+        Optional<Board> result = boardRepository.findById(999L);
+
+        assertThat(result).isEmpty();
     }
 
     @Test
