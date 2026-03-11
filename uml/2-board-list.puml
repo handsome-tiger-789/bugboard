@@ -1,0 +1,45 @@
+@startuml
+title 로그인 이후 게시판 목록 조회 (Gateway + JWKS)
+
+actor 사용자
+participant "Browser / Client" as Client
+participant "Front Server (BFF)" as Front
+participant "API Gateway" as Gateway
+participant "Auth Server (JWKS)" as Auth
+participant "API Server" as API
+database "User DB" as DB
+
+== 로그인 성공 상태 ==
+note over Client
+JWT Access Token 보유
+end note
+
+== 게시판 목록 조회 ==
+사용자 -> Client : 게시판 페이지 이동
+
+Client -> Front : 게시판 목록 요청\nAuthorization: Bearer JWT
+
+Front -> Gateway : 게시판 목록 요청\nAuthorization: Bearer JWT
+
+== JWT 검증 ==
+Gateway -> Auth : JWKS 공개키 조회
+Auth --> Gateway : JWKS 반환
+
+Gateway -> Gateway : JWT Signature 검증\nToken Expiration 확인
+
+alt 토큰 유효
+    Gateway -> API : 게시판 목록 API 요청
+
+    API -> DB : 게시글 목록 조회\n(page, size)
+    DB --> API : 게시글 목록 데이터
+
+    API --> Gateway : 게시판 목록 반환
+    Gateway --> Front : 게시판 목록 전달
+    Front --> Client : 게시판 화면 렌더링
+
+else 토큰 만료 / 위조
+    Gateway --> Front : 인증 실패 (401)
+    Front --> Client : 로그인 페이지 리다이렉트
+end
+
+@enduml

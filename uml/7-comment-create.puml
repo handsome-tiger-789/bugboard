@@ -1,0 +1,39 @@
+@startuml
+title 댓글 등록
+
+actor 사용자
+participant "Browser / Client" as Client
+participant "Front Server (BFF)" as Front
+participant "API Gateway" as Gateway
+participant "Auth Server (JWKS)" as Auth
+participant "API Server" as API
+database "User DB" as DB
+
+사용자 -> Client : 댓글 작성 후 등록
+
+Client -> Front : 댓글 등록 요청\n(postId, content, JWT)
+Front -> Gateway : 댓글 등록 API 요청
+
+== JWT 검증 ==
+Gateway -> Auth : JWKS 조회
+Auth --> Gateway : JWKS 반환
+Gateway -> Gateway : JWT 검증
+
+alt 토큰 유효
+    Gateway -> API : 댓글 생성 요청
+
+    API -> API : JWT userId 추출
+
+    API -> DB : 댓글 INSERT\n(post_id, content, author_id, is_delete=false)
+    DB --> API : 생성 완료
+
+    API --> Gateway : 댓글 등록 성공
+    Gateway --> Front : 응답 전달
+    Front --> Client : 댓글 목록 갱신
+
+else 토큰 무효
+    Gateway --> Front : 인증 실패
+    Front --> Client : 로그인 페이지 이동
+end
+
+@enduml

@@ -1,0 +1,54 @@
+@startuml
+title 게시글 수정 및 삭제 (Soft Delete)
+
+actor 사용자
+participant "Browser / Client" as Client
+participant "Front Server (BFF)" as Front
+participant "API Gateway" as Gateway
+participant "Auth Server (JWKS)" as Auth
+participant "API Server" as API
+database "User DB" as DB
+
+사용자 -> Client : 게시글 수정 또는 삭제 클릭
+
+Client -> Front : 게시글 수정/삭제 요청\n(postId, JWT)
+Front -> Gateway : 게시글 수정/삭제 API 요청
+
+== JWT 검증 ==
+Gateway -> Auth : JWKS 조회
+Auth --> Gateway : JWKS 반환
+Gateway -> Gateway : JWT Signature 검증
+
+alt 토큰 유효
+    Gateway -> API : 게시글 수정/삭제 요청
+
+    API -> DB : 게시글 조회
+    DB --> API : post(author_id)
+
+    API -> API : JWT userId == author_id 확인
+
+    alt 작성자
+        alt 수정 요청
+            API -> DB : 게시글 UPDATE\n(title, content)
+            DB --> API : 수정 완료
+        else 삭제 요청
+            API -> DB : 게시글 UPDATE\nis_delete = true
+            DB --> API : 삭제 완료
+        end
+
+        API --> Gateway : 처리 성공
+        Gateway --> Front : 응답 전달
+        Front --> Client : 결과 반영
+
+    else 권한 없음
+        API --> Gateway : 403 Forbidden
+        Gateway --> Front : 권한 오류
+        Front --> Client : 작업 불가 메시지
+    end
+
+else 토큰 무효
+    Gateway --> Front : 401 Unauthorized
+    Front --> Client : 로그인 페이지 이동
+end
+
+@enduml
