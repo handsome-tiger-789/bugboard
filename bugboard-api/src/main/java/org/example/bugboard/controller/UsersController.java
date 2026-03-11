@@ -13,7 +13,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 public class UsersController {
 
@@ -30,7 +30,7 @@ public class UsersController {
                 .role(request.role())
                 .build();
         Users saved = usersService.create(users);
-        return ResponseEntity.created(URI.create("/api/users/" + saved.getId()))
+        return ResponseEntity.created(URI.create("/users/" + saved.getId()))
                 .body(UsersResponse.from(saved));
     }
 
