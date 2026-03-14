@@ -16,6 +16,9 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
+import org.example.bugboard.entity.Board;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -50,6 +53,43 @@ class BoardControllerTest {
                 .build();
         em.persist(testUser);
         em.flush();
+    }
+
+    // --- Detail ---
+
+    @Test
+    @DisplayName("게시글 상세 조회 성공 - 게시글 내용 + 시간 포맷 확인")
+    void findById_success() throws Exception {
+        Board board = Board.builder()
+                .users(testUser)
+                .title("상세 조회 테스트")
+                .content("상세 내용입니다.")
+                .build();
+        em.persist(board);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get("/boards/{id}", board.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(board.getId()))
+                .andExpect(jsonPath("$.title").value("상세 조회 테스트"))
+                .andExpect(jsonPath("$.content").value("상세 내용입니다."))
+                .andExpect(jsonPath("$.nickname").value("테스터"))
+                .andExpect(jsonPath("$.viewCount").value(1))
+                .andExpect(jsonPath("$.createdAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")))
+                .andExpect(jsonPath("$.updatedAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")));
+    }
+
+    @Test
+    @DisplayName("게시글 상세 조회 실패 - 존재하지 않는 게시글")
+    void findById_failsWhenNotFound() throws Exception {
+        mockMvc.perform(get("/boards/{id}", 999L)
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Board not found: 999"));
     }
 
     // --- Create Success ---

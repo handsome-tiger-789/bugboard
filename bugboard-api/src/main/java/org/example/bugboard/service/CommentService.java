@@ -37,7 +37,7 @@ public class CommentService {
     }
 
     public List<Comment> findByBoardId(Long boardId) {
-        return commentRepository.findByBoardId(boardId);
+        return commentRepository.findByBoardIdAndIsDeleteFalseOrderByCreatedAtDesc(boardId);
     }
 
     @Transactional

@@ -2,7 +2,7 @@ package org.example.bugboard.dto.comment;
 
 import org.example.bugboard.entity.Comment;
 
-import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public record CommentResponse(
         Long id,
@@ -11,9 +11,11 @@ public record CommentResponse(
         String nickname,
         String content,
         Integer likeCount,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        String createdAt,
+        String updatedAt
 ) {
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     public static CommentResponse from(Comment comment) {
         return new CommentResponse(
                 comment.getId(),
@@ -22,8 +24,8 @@ public record CommentResponse(
                 comment.getUsers().getNickname(),
                 comment.getContent(),
                 comment.getLikeCount(),
-                comment.getCreatedAt(),
-                comment.getUpdatedAt()
+                comment.getCreatedAt().format(FORMATTER),
+                comment.getUpdatedAt().format(FORMATTER)
         );
     }
 }

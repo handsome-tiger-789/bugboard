@@ -3,6 +3,7 @@ package org.example.bugboard.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.bugboard.dto.board.BoardCreateRequest;
 import org.example.bugboard.dto.board.BoardCreateResponse;
+import org.example.bugboard.dto.board.BoardDetailResponse;
 import org.example.bugboard.dto.board.BoardListResponse;
 import org.example.bugboard.dto.board.BoardResponse;
 import org.example.bugboard.dto.board.BoardUpdateRequest;
@@ -32,8 +33,8 @@ public class BoardController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BoardResponse> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(BoardResponse.from(boardService.findById(id)));
+    public ResponseEntity<BoardDetailResponse> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(BoardDetailResponse.from(boardService.findById(id)));
     }
 
     /**
