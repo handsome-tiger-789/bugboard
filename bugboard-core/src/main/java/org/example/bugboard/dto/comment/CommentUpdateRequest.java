@@ -1,4 +1,9 @@
 package org.example.bugboard.dto.comment;
 
-public record CommentUpdateRequest(String content) {
+import jakarta.validation.constraints.NotBlank;
+
+public record CommentUpdateRequest(
+        @NotBlank(message = "내용이 비어있습니다.")
+        String content
+) {
 }

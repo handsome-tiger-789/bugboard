@@ -41,6 +41,10 @@ public class Comment extends BaseEntity {
         this.content = content;
     }
 
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
     @Override
     @PrePersist
     protected void prePersist() {

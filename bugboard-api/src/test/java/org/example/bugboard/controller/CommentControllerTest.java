@@ -11,10 +11,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
+import java.util.Map;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,6 +33,9 @@ class CommentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private EntityManager em;
@@ -54,6 +64,289 @@ class CommentControllerTest {
 
         em.flush();
     }
+
+    // --- Create ---
+
+    @Test
+    @DisplayName("댓글 작성 성공 - 201 Created, commentId 반환")
+    void create_success() throws Exception {
+        String body = objectMapper.writeValueAsString(
+                Map.of("content", "새 댓글입니다."));
+
+        mockMvc.perform(post("/boards/{boardId}/comments", testBoard.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.commentId").isNumber());
+    }
+
+    @Test
+    @DisplayName("댓글 작성 실패 - content 누락")
+    void create_failsWhenContentIsBlank() throws Exception {
+        String body = objectMapper.writeValueAsString(
+                Map.of("content", ""));
+
+        mockMvc.perform(post("/boards/{boardId}/comments", testBoard.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("content: 내용이 비어있습니다."));
+    }
+
+    @Test
+    @DisplayName("댓글 작성 실패 - 빈 body")
+    void create_failsWhenBodyIsEmpty() throws Exception {
+        mockMvc.perform(post("/boards/{boardId}/comments", testBoard.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("댓글 작성 실패 - 존재하지 않는 게시글")
+    void create_failsWhenBoardNotFound() throws Exception {
+        String body = objectMapper.writeValueAsString(
+                Map.of("content", "댓글 내용"));
+
+        mockMvc.perform(post("/boards/{boardId}/comments", 999L)
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Board not found: 999"));
+    }
+
+    // --- Update ---
+
+    @Test
+    @DisplayName("댓글 수정 성공 - 본인 댓글 수정")
+    void update_success() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("수정 전 댓글")
+                .build();
+        em.persist(comment);
+        em.flush();
+        em.clear();
+
+        String body = objectMapper.writeValueAsString(
+                Map.of("content", "수정 후 댓글"));
+
+        mockMvc.perform(put("/comments/{id}", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(comment.getId()))
+                .andExpect(jsonPath("$.content").value("수정 후 댓글"));
+    }
+
+    @Test
+    @DisplayName("댓글 수정 실패 - 다른 사용자의 댓글 수정 불가")
+    void update_failsWhenNotOwner() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("원본 댓글")
+                .build();
+        em.persist(comment);
+
+        Users otherUser = Users.builder()
+                .provider("google")
+                .providerId("google-456")
+                .email("other@test.com")
+                .name("다른유저")
+                .nickname("다른사람")
+                .role("ROLE_USER")
+                .build();
+        em.persist(otherUser);
+        em.flush();
+        em.clear();
+
+        String body = objectMapper.writeValueAsString(
+                Map.of("content", "수정 시도"));
+
+        mockMvc.perform(put("/comments/{id}", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(otherUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("본인의 댓글만 수정할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("댓글 수정 실패 - content 누락")
+    void update_failsWhenContentIsBlank() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("원본 댓글")
+                .build();
+        em.persist(comment);
+        em.flush();
+        em.clear();
+
+        String body = objectMapper.writeValueAsString(
+                Map.of("content", ""));
+
+        mockMvc.perform(put("/comments/{id}", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("content: 내용이 비어있습니다."));
+    }
+
+    @Test
+    @DisplayName("댓글 수정 실패 - 존재하지 않는 댓글")
+    void update_failsWhenCommentNotFound() throws Exception {
+        String body = objectMapper.writeValueAsString(
+                Map.of("content", "수정 내용"));
+
+        mockMvc.perform(put("/comments/{id}", 999L)
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Comment not found: 999"));
+    }
+
+    // --- Delete ---
+
+    @Test
+    @DisplayName("댓글 삭제 성공 - 본인 댓글 삭제")
+    void delete_success() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("삭제할 댓글")
+                .build();
+        em.persist(comment);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(delete("/comments/{id}", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 실패 - 다른 사용자의 댓글 삭제 불가")
+    void delete_failsWhenNotOwner() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("원본 댓글")
+                .build();
+        em.persist(comment);
+
+        Users otherUser = Users.builder()
+                .provider("google")
+                .providerId("google-456")
+                .email("other@test.com")
+                .name("다른유저")
+                .nickname("다른사람")
+                .role("ROLE_USER")
+                .build();
+        em.persist(otherUser);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(delete("/comments/{id}", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(otherUser.getId())))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("본인의 댓글만 삭제할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 실패 - 존재하지 않는 댓글")
+    void delete_failsWhenCommentNotFound() throws Exception {
+        mockMvc.perform(delete("/comments/{id}", 999L)
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Comment not found: 999"));
+    }
+
+    // --- Like ---
+
+    @Test
+    @DisplayName("댓글 좋아요 성공 - likeCount 1 증가")
+    void like_success() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("좋아요 테스트 댓글")
+                .build();
+        em.persist(comment);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(post("/comments/{id}/like", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // 댓글 조회하여 likeCount 확인
+        mockMvc.perform(get("/boards/{boardId}/comments", testBoard.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].likeCount").value(1));
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 여러 번 - likeCount 누적")
+    void like_multiple() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("좋아요 누적 테스트")
+                .build();
+        em.persist(comment);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(post("/comments/{id}/like", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/comments/{id}/like", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/boards/{boardId}/comments", testBoard.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].likeCount").value(2));
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 실패 - 존재하지 않는 댓글")
+    void like_failsWhenCommentNotFound() throws Exception {
+        mockMvc.perform(post("/comments/{id}/like", 999L)
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Comment not found: 999"));
+    }
+
+    // --- List ---
 
     @Test
     @DisplayName("댓글 목록 조회 성공 - 댓글 내용 + 시간 포맷 확인")
