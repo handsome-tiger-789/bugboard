@@ -18,6 +18,7 @@ import java.util.Map;
 
 import org.example.bugboard.entity.Board;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -168,5 +169,113 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.message").value("title: 제목은 50자 이하로 입력해주세요."));
     }
 
+    // --- Update ---
 
+    @Test
+    @DisplayName("게시글 수정 성공 - 본인 게시글 수정")
+    void update_success() throws Exception {
+        Board board = Board.builder()
+                .users(testUser)
+                .title("수정 전 제목")
+                .content("수정 전 내용")
+                .build();
+        em.persist(board);
+        em.flush();
+        em.clear();
+
+        String body = objectMapper.writeValueAsString(
+                Map.of("title", "수정 후 제목", "content", "수정 후 내용"));
+
+        mockMvc.perform(put("/boards/{id}", board.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("수정 후 제목"))
+                .andExpect(jsonPath("$.content").value("수정 후 내용"));
+    }
+
+    @Test
+    @DisplayName("게시글 수정 실패 - 다른 사용자의 게시글 수정 불가")
+    void update_failsWhenNotOwner() throws Exception {
+        Board board = Board.builder()
+                .users(testUser)
+                .title("원본 제목")
+                .content("원본 내용")
+                .build();
+        em.persist(board);
+
+        Users otherUser = Users.builder()
+                .provider("google")
+                .providerId("google-456")
+                .email("other@test.com")
+                .name("다른유저")
+                .nickname("다른사람")
+                .role("ROLE_USER")
+                .build();
+        em.persist(otherUser);
+        em.flush();
+        em.clear();
+
+        String body = objectMapper.writeValueAsString(
+                Map.of("title", "수정 시도", "content", "수정 내용"));
+
+        mockMvc.perform(put("/boards/{id}", board.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(otherUser.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("본인의 게시글만 수정할 수 있습니다."));
+    }
+
+    // --- Delete ---
+
+    @Test
+    @DisplayName("게시글 삭제 성공 - 본인 게시글 삭제")
+    void delete_success() throws Exception {
+        Board board = Board.builder()
+                .users(testUser)
+                .title("삭제할 게시글")
+                .content("삭제할 내용")
+                .build();
+        em.persist(board);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(delete("/boards/{id}", board.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 실패 - 다른 사용자의 게시글 삭제 불가")
+    void delete_failsWhenNotOwner() throws Exception {
+        Board board = Board.builder()
+                .users(testUser)
+                .title("원본 게시글")
+                .content("원본 내용")
+                .build();
+        em.persist(board);
+
+        Users otherUser = Users.builder()
+                .provider("google")
+                .providerId("google-456")
+                .email("other@test.com")
+                .name("다른유저")
+                .nickname("다른사람")
+                .role("ROLE_USER")
+                .build();
+        em.persist(otherUser);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(delete("/boards/{id}", board.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(otherUser.getId())))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("본인의 게시글만 삭제할 수 있습니다."));
+    }
 }

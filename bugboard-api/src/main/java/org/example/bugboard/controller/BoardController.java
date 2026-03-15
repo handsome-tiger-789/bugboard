@@ -49,13 +49,18 @@ public class BoardController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BoardResponse> update(@PathVariable Long id, @Valid @RequestBody BoardUpdateRequest request) {
-        return ResponseEntity.ok(BoardResponse.from(boardService.update(id, request.title(), request.content())));
+    public ResponseEntity<BoardResponse> update(
+            @PathVariable Long id,
+            @AuthenticationPrincipal HeaderUserInfo userInfo,
+            @Valid @RequestBody BoardUpdateRequest request) {
+        return ResponseEntity.ok(BoardResponse.from(boardService.update(id, userInfo.userId(), request.title(), request.content())));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boardService.delete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal HeaderUserInfo userInfo) {
+        boardService.delete(id, userInfo.userId());
         return ResponseEntity.noContent().build();
     }
 }

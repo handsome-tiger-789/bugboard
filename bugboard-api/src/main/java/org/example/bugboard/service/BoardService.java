@@ -5,6 +5,7 @@ import org.example.bugboard.dto.board.BoardCreateRequest;
 import org.example.bugboard.dto.board.BoardListResponse;
 import org.example.bugboard.entity.Board;
 import org.example.bugboard.entity.Users;
+import org.example.bugboard.exception.ForbiddenException;
 import org.example.bugboard.exception.ResourceNotFoundException;
 import org.example.bugboard.repository.BoardRepository;
 import org.example.bugboard.repository.UsersRepository;
@@ -46,17 +47,23 @@ public class BoardService {
     }
 
     @Transactional
-    public Board update(Long id, String title, String content) {
+    public Board update(Long id, Long usersId, String title, String content) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Board", id));
+        if (!board.getUsers().getId().equals(usersId)) {
+            throw new ForbiddenException("본인의 게시글만 수정할 수 있습니다.");
+        }
         board.update(title, content);
         return board;
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, Long usersId) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Board", id));
+        if (!board.getUsers().getId().equals(usersId)) {
+            throw new ForbiddenException("본인의 게시글만 삭제할 수 있습니다.");
+        }
         board.softDelete();
     }
 }
