@@ -33,11 +33,10 @@ public class CommentController {
     }
 
     @GetMapping("/boards/{boardId}/comments")
-    public ResponseEntity<List<CommentResponse>> findByBoardId(@PathVariable Long boardId) {
-        List<CommentResponse> comments = commentService.findByBoardId(boardId).stream()
-                .map(CommentResponse::from)
-                .toList();
-        return ResponseEntity.ok(comments);
+    public ResponseEntity<List<CommentResponse>> findByBoardId(
+            @PathVariable Long boardId,
+            @AuthenticationPrincipal HeaderUserInfo userInfo) {
+        return ResponseEntity.ok(commentService.findByBoardId(boardId, userInfo.userId()));
     }
 
     @PutMapping("/comments/{id}")
@@ -45,12 +44,14 @@ public class CommentController {
             @PathVariable Long id,
             @AuthenticationPrincipal HeaderUserInfo userInfo,
             @Valid @RequestBody CommentUpdateRequest request) {
-        return ResponseEntity.ok(CommentResponse.from(commentService.update(id, userInfo.userId(), request.content())));
+        return ResponseEntity.ok(commentService.update(id, userInfo.userId(), request.content()));
     }
 
     @PostMapping("/comments/{id}/like")
-    public ResponseEntity<Void> like(@PathVariable Long id) {
-        commentService.like(id);
+    public ResponseEntity<Void> like(
+            @PathVariable Long id,
+            @AuthenticationPrincipal HeaderUserInfo userInfo) {
+        commentService.toggleLike(id, userInfo.userId());
         return ResponseEntity.ok().build();
     }
 

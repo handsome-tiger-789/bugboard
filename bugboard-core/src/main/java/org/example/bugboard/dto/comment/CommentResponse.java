@@ -10,20 +10,22 @@ public record CommentResponse(
         Long usersId,
         String nickname,
         String content,
-        Integer likeCount,
+        Long likeCount,
+        Boolean liked,
         String createdAt,
         String updatedAt
 ) {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static CommentResponse from(Comment comment) {
+    public static CommentResponse from(Comment comment, Long likeCount, Boolean liked) {
         return new CommentResponse(
                 comment.getId(),
                 comment.getBoard().getId(),
                 comment.getUsers().getId(),
                 comment.getUsers().getNickname(),
                 comment.getContent(),
-                comment.getLikeCount(),
+                likeCount,
+                liked,
                 comment.getCreatedAt().format(FORMATTER),
                 comment.getUpdatedAt().format(FORMATTER)
         );

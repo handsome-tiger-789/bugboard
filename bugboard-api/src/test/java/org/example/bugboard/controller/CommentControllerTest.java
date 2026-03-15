@@ -285,7 +285,7 @@ class CommentControllerTest {
     // --- Like ---
 
     @Test
-    @DisplayName("댓글 좋아요 성공 - likeCount 1 증가")
+    @DisplayName("댓글 좋아요 성공 - comment_like 테이블에 저장, likeCount 1")
     void like_success() throws Exception {
         Comment comment = Comment.builder()
                 .board(testBoard)
@@ -301,23 +301,33 @@ class CommentControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        // 댓글 조회하여 likeCount 확인
         mockMvc.perform(get("/boards/{boardId}/comments", testBoard.getId())
                         .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].likeCount").value(1));
+                .andExpect(jsonPath("$[0].likeCount").value(1))
+                .andExpect(jsonPath("$[0].liked").value(true));
     }
 
     @Test
-    @DisplayName("댓글 좋아요 여러 번 - likeCount 누적")
-    void like_multiple() throws Exception {
+    @DisplayName("댓글 좋아요 여러 사용자 - likeCount 누적, liked 여부 사용자별 구분")
+    void like_multipleUsers() throws Exception {
         Comment comment = Comment.builder()
                 .board(testBoard)
                 .users(testUser)
                 .content("좋아요 누적 테스트")
                 .build();
         em.persist(comment);
+
+        Users otherUser = Users.builder()
+                .provider("google")
+                .providerId("google-789")
+                .email("other2@test.com")
+                .name("다른유저2")
+                .nickname("다른사람2")
+                .role("ROLE_USER")
+                .build();
+        em.persist(otherUser);
         em.flush();
         em.clear();
 
@@ -326,6 +336,44 @@ class CommentControllerTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/comments/{id}/like", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(otherUser.getId())))
+                .andExpect(status().isOk());
+
+        // testUser 시점: liked=true, likeCount=2
+        mockMvc.perform(get("/boards/{boardId}/comments", testBoard.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].likeCount").value(2))
+                .andExpect(jsonPath("$[0].liked").value(true));
+
+        // otherUser 시점: liked=true, likeCount=2
+        mockMvc.perform(get("/boards/{boardId}/comments", testBoard.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(otherUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].likeCount").value(2))
+                .andExpect(jsonPath("$[0].liked").value(true));
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 취소 - 이미 좋아요한 댓글 다시 누르면 취소, liked=false")
+    void like_toggleOff() throws Exception {
+        Comment comment = Comment.builder()
+                .board(testBoard)
+                .users(testUser)
+                .content("좋아요 취소 테스트")
+                .build();
+        em.persist(comment);
+        em.flush();
+        em.clear();
+
+        // 좋아요
+        mockMvc.perform(post("/comments/{id}/like", comment.getId())
+                        .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
+                .andExpect(status().isOk());
+
+        // 좋아요 취소
+        mockMvc.perform(post("/comments/{id}/like", comment.getId())
                         .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
                 .andExpect(status().isOk());
 
@@ -333,7 +381,8 @@ class CommentControllerTest {
                         .header(UserHeaders.USER_ID, String.valueOf(testUser.getId())))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].likeCount").value(2));
+                .andExpect(jsonPath("$[0].likeCount").value(0))
+                .andExpect(jsonPath("$[0].liked").value(false));
     }
 
     @Test
@@ -371,6 +420,7 @@ class CommentControllerTest {
                 .andExpect(jsonPath("$[0].nickname").value("테스터"))
                 .andExpect(jsonPath("$[0].content").value("첫 번째 댓글"))
                 .andExpect(jsonPath("$[0].likeCount").value(0))
+                .andExpect(jsonPath("$[0].liked").value(false))
                 .andExpect(jsonPath("$[0].createdAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")))
                 .andExpect(jsonPath("$[0].updatedAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")));
     }
