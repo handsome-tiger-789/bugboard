@@ -3,6 +3,7 @@ package org.example.bugboard.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.bugboard.dto.board.BoardCreateRequest;
 import org.example.bugboard.dto.board.BoardCreateResponse;
+import org.example.bugboard.dto.board.BoardDetailResponse;
 import org.example.bugboard.dto.board.BoardListResponse;
 import org.example.bugboard.dto.board.BoardResponse;
 import org.example.bugboard.dto.board.BoardUpdateRequest;
@@ -32,8 +33,8 @@ public class BoardController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BoardResponse> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(BoardResponse.from(boardService.findById(id)));
+    public ResponseEntity<BoardDetailResponse> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(BoardDetailResponse.from(boardService.findById(id)));
     }
 
     /**
@@ -48,13 +49,18 @@ public class BoardController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BoardResponse> update(@PathVariable Long id, @Valid @RequestBody BoardUpdateRequest request) {
-        return ResponseEntity.ok(BoardResponse.from(boardService.update(id, request.title(), request.content())));
+    public ResponseEntity<BoardResponse> update(
+            @PathVariable Long id,
+            @AuthenticationPrincipal HeaderUserInfo userInfo,
+            @Valid @RequestBody BoardUpdateRequest request) {
+        return ResponseEntity.ok(BoardResponse.from(boardService.update(id, userInfo.userId(), request.title(), request.content())));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boardService.delete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal HeaderUserInfo userInfo) {
+        boardService.delete(id, userInfo.userId());
         return ResponseEntity.noContent().build();
     }
 }
